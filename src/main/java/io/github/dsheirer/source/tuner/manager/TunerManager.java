@@ -206,7 +206,6 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                                 TunerClass tunerClass = TunerClass.lookup(deviceDescriptor.idVendor(),
                                         deviceDescriptor.idProduct());
 
-                                mLog.info("Device [" + bus + "] port [" + port + "] vendor [" + deviceDescriptor.idVendor() + "] product [" + deviceDescriptor.idProduct() + "] class [" + tunerClass + "]");
                                 String portAddress = getPortAddress(device);
 
                                 if(tunerClass.isSupportedUsbTuner())
