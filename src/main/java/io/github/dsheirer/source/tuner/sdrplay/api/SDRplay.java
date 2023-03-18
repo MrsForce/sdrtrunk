@@ -171,7 +171,7 @@ public class SDRplay
         }
         catch(Throwable t)
         {
-            mLog.error("Unable to load SDRplay API library from default install path.  Loading from java system library path", t);
+            mLog.error("Unable to load SDRplay API library from default install path.  Loading from java system library path");
 
             try
             {
@@ -187,7 +187,7 @@ public class SDRplay
                     mLog.warn("SDRPlay API library not found/installed on this system.  Ensure the API is installed either " +
                             "in the default install location or the install location is included in the " +
                             "'java.library.path' JVM property contains path to the library file [" + name +
-                            "].  Current library path property contents: " + System.getProperty(JAVA_LIBRARY_PATH_KEY), t);
+                            "].  Current library path property contents: " + System.getProperty(JAVA_LIBRARY_PATH_KEY));
                 }
             }
         }
@@ -561,21 +561,28 @@ public class SDRplay
      */
     public Status close()
     {
-        Status closeStatus;
-
-        try
+        if(mSdrplayLibraryLoaded)
         {
-            closeStatus = Status.fromValue(sdrplay_api_h.sdrplay_api_Close());
-        }
-        catch(Exception e)
-        {
-            closeStatus = Status.FAIL;
-            mLog.error("Error closing SDRPlay API", e);
-        }
+            Status closeStatus;
 
-        mSdrplayLibraryLoaded = false;
-        mAvailable = false;
-        return closeStatus;
+            try
+            {
+                closeStatus = Status.fromValue(sdrplay_api_h.sdrplay_api_Close());
+            }
+            catch(Exception e)
+            {
+                closeStatus = Status.FAIL;
+                mLog.error("Error closing SDRPlay API");
+            }
+
+            mSdrplayLibraryLoaded = false;
+            mAvailable = false;
+            return closeStatus;
+        }
+        else
+        {
+            return Status.API_UNAVAILABLE;
+        }
     }
 
     /**
