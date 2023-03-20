@@ -19,49 +19,47 @@
 
 package io.github.dsheirer.source.tuner.airspy.hf;
 
-import java.text.DecimalFormat;
-
 /**
- * Airspy HF sample rate.
+ * Attenuation levels for the Airspy HF+ tuner
  */
-public class AirspyHfSampleRate
+public enum Attenuation
 {
-    private static final DecimalFormat KILOHERTZ_FORMATTER = new DecimalFormat("0.0");
-    private int mSampleRate;
-    private boolean mLowIf;
+    A0(0, "0 dB"),
+    A1(1, "6 dB"),
+    A2(2, "12 dB"),
+    A3(3, "18 dB"),
+    A4(4, "24 dB"),
+    A5(5, "30 dB"),
+    A6(6, "36 dB"),
+    A7(7, "42 dB"),
+    A8(8, "48 dB");
+
+    private int mValue;
+    private String mLabel;
 
     /**
      * Constructs an instance
-     * @param sampleRate in Hertz
-     * @param lowIf true if Low IF (LIF) or (default) false if Zero IF (ZIF)
+     * @param value for the attenuation level
+     * @param label to display in the UI
      */
-    public AirspyHfSampleRate(int sampleRate, boolean lowIf)
+    Attenuation(int value, String label)
     {
-        mSampleRate = sampleRate;
-        mLowIf = lowIf;
+        mValue = value;
+        mLabel = label;
     }
 
     /**
-     * Value of sample rate
-     * @return rate in Hertz
+     * Byte value setting
+     * @return value
      */
-    public int getSampleRate()
+    public byte getValue()
     {
-        return mSampleRate;
-    }
-
-    /**
-     * Indicates if the sample rate uses Low IF (LIF) versus Zero IF (ZIF)
-     * @return true if LIF
-     */
-    public boolean isLowIf()
-    {
-        return mLowIf;
+        return (byte)(mValue & 0xFF);
     }
 
     @Override
     public String toString()
     {
-        return KILOHERTZ_FORMATTER.format(mSampleRate / 1E3) + " kHz " + (isLowIf() ? "(Low IF)" : "(Zero IF)");
+        return mLabel;
     }
 }

@@ -84,13 +84,13 @@ public class AirspyHfTuner extends Tuner
     @Override
     public double getSampleSize()
     {
-        return 13.0;
+        return 18.0;
     }
 
     @Override
     public int getMaximumUSBBitsPerSecond()
     {
-        //4-bytes per sample = 32 bits times 10 MSps = 320,000,000 bits per second
-        return 320000000;
+        //4-bytes per sample = 32 bits times 912 kSps = 29,184,000 bits per second
+        return 29_184_000;
     }
 }

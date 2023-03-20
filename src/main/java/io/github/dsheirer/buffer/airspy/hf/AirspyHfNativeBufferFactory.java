@@ -17,32 +17,34 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.util;
+package io.github.dsheirer.buffer.airspy.hf;
+
+import io.github.dsheirer.buffer.AbstractNativeBufferFactory;
+import io.github.dsheirer.buffer.INativeBuffer;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 
 /**
- * Utilities for working with bytes and byte arrays
+ * Airspy HF+ native buffer factory.
+ *
+ * Note: the tuner provides 1024 samples in each transfer where samples are 16-bit interleaved complex.
  */
-public class ByteUtil
+public class AirspyHfNativeBufferFactory extends AbstractNativeBufferFactory
 {
     /**
-     * Converts a byte array to an integer using big endian format.
-     * @param bytes containing four bytes.
-     * @param offset into the byte array to start parsing.
-     * @return signed integer value.
+     * Constructs an instance
      */
-    public static int toInteger(byte[] bytes, int offset)
+    public AirspyHfNativeBufferFactory()
     {
-        if(bytes == null || bytes.length < (offset + 4))
-        {
-            throw new IllegalArgumentException("Conversion to integer requires byte array with at least 4 bytes - " +
-                    "length:" + bytes.length + " offset:" + offset);
-        }
+    }
 
-        int value = (bytes[offset + 3] & 0xFF) << 24;
-        value += (bytes[offset + 2] & 0xFF) << 16;
-        value += (bytes[offset + 1] & 0xFF) << 8;
-        value += (bytes[offset] & 0xFF);
-
-        return value;
+    @Override
+    public INativeBuffer getBuffer(ByteBuffer samples, long timestamp)
+    {
+        ShortBuffer shortBuffer = samples.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer();
+        short[] converted = new short[shortBuffer.capacity() / 2];
+        shortBuffer.get(converted);
+        return new AirspyHfNativeBuffer(timestamp, converted);
     }
 }

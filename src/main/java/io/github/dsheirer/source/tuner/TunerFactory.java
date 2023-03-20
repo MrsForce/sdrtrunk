@@ -31,6 +31,7 @@ import io.github.dsheirer.source.tuner.airspy.AirspyTunerEditor;
 import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTuner;
 import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTunerConfiguration;
 import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTunerController;
+import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTunerEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.fcd.FCDTuner;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerConfiguration;
@@ -412,6 +413,8 @@ public class TunerFactory
         {
             case AIRSPY:
                 return new AirspyTunerEditor(userPreferences, tunerManager, discoveredTuner);
+            case AIRSPY_HF:
+                return new AirspyHfTunerEditor(userPreferences, tunerManager, discoveredTuner);
             case FUNCUBE_DONGLE_PRO:
                 return new FCD1TunerEditor(userPreferences, tunerManager, discoveredTuner);
             case FUNCUBE_DONGLE_PRO_PLUS:
