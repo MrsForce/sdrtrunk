@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,8 +45,8 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexSamplesWaveRecorder.class);
 
-    private Dispatcher<ComplexSamples> mBufferProcessor = new Dispatcher<>(500,
-            "sdrtrunk complex wave recorder", new ComplexSamples(new float[0], new float[0], System.currentTimeMillis()));
+    private Dispatcher<ComplexSamples> mBufferProcessor = new Dispatcher<>(500, 20, 50,
+            "sdrtrunk complex wave recorder");
 
     private AtomicBoolean mRunning = new AtomicBoolean();
     private BufferWaveWriter mWriter;

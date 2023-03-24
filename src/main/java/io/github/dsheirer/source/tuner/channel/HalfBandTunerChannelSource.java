@@ -19,7 +19,6 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.buffer.NativeBufferPoisonPill;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
@@ -76,8 +75,8 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
         mIDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimation);
         mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimation);
 
-        mBufferDispatcher = new Dispatcher(BUFFER_MAX_CAPACITY, "sdrtrunk heterodyne channel " +
-                tunerChannel.getFrequency(), new NativeBufferPoisonPill());
+        mBufferDispatcher = new Dispatcher(BUFFER_MAX_CAPACITY, 25, 50,
+            "sdrtrunk heterodyne channel " + tunerChannel.getFrequency());
         mBufferDispatcher.setListener(new NativeBufferProcessor());
 
         //Setup the frequency mixer to the current source frequency

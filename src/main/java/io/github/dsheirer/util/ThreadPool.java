@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,20 +19,27 @@
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.controller.NamingThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Application-wide static thread pools for scheduled and ad-hoc threaded tasks.
+ */
 public class ThreadPool
 {
     private final static Logger mLog = LoggerFactory.getLogger(ThreadPool.class);
-    public static ScheduledExecutorService SCHEDULED =
-            Executors.newScheduledThreadPool(4, new NamingThreadFactory("sdrtrunk scheduled"));
-    public static ExecutorService CACHED =
-            Executors.newCachedThreadPool(new NamingThreadFactory("sdrtrunk cached"));
+    public static ExecutorService CACHED = Executors.newCachedThreadPool(new NamingThreadFactory("sdrtrunk cached"));
+    public static ScheduledExecutorService SCHEDULED;
+    private static int sScheduledPoolThreadCount;
+    static
+    {
+        sScheduledPoolThreadCount = Math.max(4, Runtime.getRuntime().availableProcessors());
+        SCHEDULED = Executors.newScheduledThreadPool(sScheduledPoolThreadCount,
+                new NamingThreadFactory("sdrtrunk scheduled"));
+    }
 
     /**
      * Application-wide shared thread pools and scheduled executor service.
@@ -43,6 +50,6 @@ public class ThreadPool
 
     public static void logSettings()
     {
-        mLog.info("Application thread pool created SCHEDULED and CACHED executors threads");
+        mLog.info("Application thread pools created SCHEDULED[" + sScheduledPoolThreadCount + "] and CACHED");
     }
 }

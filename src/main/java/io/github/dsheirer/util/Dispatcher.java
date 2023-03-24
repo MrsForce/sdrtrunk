@@ -19,9 +19,13 @@
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.sample.Listener;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,29 +37,29 @@ public class Dispatcher<E> implements Listener<E>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Dispatcher.class);
     private static final long OVERFLOW_LOG_EVENT_WAIT_PERIOD = TimeUnit.SECONDS.toMillis(10);
-    private LinkedBlockingQueue<E> mQueue;
+    private LinkedTransferQueue<E> mQueue;
     private Listener<E> mListener;
     private AtomicBoolean mRunning = new AtomicBoolean();
-    private String mThreadName;
-    private Thread mThread;
-    private E mPoisonPill;
+    private AtomicInteger mQueueSize = new AtomicInteger();
+    private int mMaxQueueSize;
+    private int mQueueProcessingBatchSize;
+    private long mRunInterval;
+    private String mDispatcherName;
+    private ScheduledFuture<?> mScheduledFuture;
     private long mLastOverflowLogEvent;
 
     /**
      * Constructs an instance
-     * @param maxSize of the internal queue
-     * @param threadName to name the dispatcher thread
-     * @param poisonPill of type E, used to kill the thread
+     * @param maxQueueSize of the internal queue before overflow starts to occur
+     * @param batchSize is the maximum number of enqueued elements to batch process per run interval
      */
-    public Dispatcher(int maxSize, String threadName, E poisonPill)
+    public Dispatcher(int maxQueueSize, int batchSize, long runInterval, String dispatcherName)
     {
-        if(poisonPill == null)
-        {
-            throw new IllegalArgumentException("Poison pill must be non-null");
-        }
-        mQueue = new LinkedBlockingQueue<>(maxSize);
-        mThreadName = threadName;
-        mPoisonPill = poisonPill;
+        mMaxQueueSize = maxQueueSize;
+        mQueueProcessingBatchSize = batchSize;
+        mRunInterval = runInterval;
+        mDispatcherName = dispatcherName;
+        mQueue = new LinkedTransferQueue<>();
     }
 
     /**
@@ -86,17 +90,21 @@ public class Dispatcher<E> implements Listener<E>
     {
         if(mRunning.get())
         {
-            if(!mQueue.offer(e))
+            if(mQueueSize.get() < mMaxQueueSize)
+            {
+                mQueue.add(e);
+                mQueueSize.incrementAndGet();
+            }
+            else
             {
                 if(System.currentTimeMillis() > (mLastOverflowLogEvent + OVERFLOW_LOG_EVENT_WAIT_PERIOD))
                 {
                     mLastOverflowLogEvent = System.currentTimeMillis();
-                    mLog.warn("Dispatcher - temporary buffer overflow for thread [" + mThreadName + "] - throwing away samples - " +
-                            " processor flag:" + (mRunning.get() ? "running" : "stopped") +
-                            " thread:" + (mThread != null ? (mThread.isAlive() ? mThread.getState() : "dead") : "null" ));
+                    mLog.warn("Dispatcher - temporary buffer overflow for thread [" + mDispatcherName +
+                        "] - throwing away samples - " + " processor flag:" + (mRunning.get() ? "running" : "stopped"));
                 }
             }
-        }
+       }
     }
 
     /**
@@ -106,10 +114,15 @@ public class Dispatcher<E> implements Listener<E>
     {
         if(mRunning.compareAndSet(false, true))
         {
-            mThread = new Thread(new Processor());
-            mThread.setName(mThreadName);
-            mThread.setPriority(Thread.MAX_PRIORITY);
-            mThread.start();
+            mQueue.clear();
+
+            if(mScheduledFuture != null)
+            {
+                mScheduledFuture.cancel(true);
+            }
+
+            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new Processor(), 0, mRunInterval,
+                    TimeUnit.MILLISECONDS);
         }
     }
 
@@ -120,27 +133,13 @@ public class Dispatcher<E> implements Listener<E>
     {
         if(mRunning.compareAndSet(true, false))
         {
-            mQueue.offer(mPoisonPill);
-
-            try
+            if(mScheduledFuture != null)
             {
-                mThread.interrupt();
-                mThread.join();
-                mThread = null;
-            }
-            catch(Exception e)
-            {
-                mLog.error("Timeout while waiting to join terminating buffer processor thread");
+                mScheduledFuture.cancel(true);
+                mScheduledFuture = null;
+                mQueue.clear();
             }
         }
-    }
-
-    /**
-     * Finishes processing any queued buffers and then stops the processing thread.
-     */
-    public void flushAndStop()
-    {
-        mQueue.offer(mPoisonPill);
     }
 
     /**
@@ -152,7 +151,38 @@ public class Dispatcher<E> implements Listener<E>
     }
 
     /**
-     * Processor to service the buffer queue and distribute the buffers to the registered listener
+     * Processes the transfer queue up to the maximum batch size specified.
+     */
+    private void process()
+    {
+        List<E> elements = new ArrayList<>();
+        mQueue.drainTo(elements, mQueueProcessingBatchSize);
+
+//        mLog.info("Processing [" + elements.size()+ "] of [" + mQueueSize.get() + "] for [" + mDispatcherName + "]");
+
+        for(E element: elements)
+        {
+            if(mRunning.get() && mListener != null)
+            {
+                try
+                {
+                    mListener.receive(element);
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Unexpected error while processing queue elements to send to listener [" +
+                            mListener.getClass() + "]", t);
+                }
+            }
+
+            mQueueSize.decrementAndGet();
+        }
+
+        elements.clear();
+    }
+
+    /**
+     * Processor to invoke the process() method.
      */
     class Processor implements Runnable
     {
@@ -161,46 +191,11 @@ public class Dispatcher<E> implements Listener<E>
         {
             try
             {
-                mQueue.clear();
-
-                E element;
-
-                while(mRunning.get())
-                {
-                    try
-                    {
-                        element = mQueue.take();
-
-                        if(mPoisonPill == element)
-                        {
-                            mRunning.set(false);
-                        }
-                        else if(element != null)
-                        {
-                            if(mListener == null)
-                            {
-                                throw new IllegalStateException("Listener for [" + mThreadName + "] is null");
-                            }
-                            mListener.receive(element);
-                        }
-                    }
-                    catch(InterruptedException e)
-                    {
-                        //Normal shutdown is by interrupt
-                        mRunning.set(false);
-                    }
-                    catch(Exception e)
-                    {
-                        mLog.error("Error while processing element", e);
-                    }
-                }
-
-                //Shutting down - clear the queue
-                mQueue.clear();
+                process();
             }
             catch(Throwable t)
             {
-                mLog.error("Unexpected error thrown from the Dispatcher thread", t);
+                mLog.error("Unexpected error thrown from the Dispatcher processor thread", t);
             }
         }
     }

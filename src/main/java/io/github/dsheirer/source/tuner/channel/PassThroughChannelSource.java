@@ -20,7 +20,6 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.buffer.NativeBufferPoisonPill;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.ISourceEventListener;
@@ -55,8 +54,8 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     {
         super(listener, tunerChannel);
         mTunerController = tunerController;
-        mBufferDispatcher = new Dispatcher<>(500, "sdrtrunk pass-through channel " +
-                tunerChannel.getFrequency(), new NativeBufferPoisonPill());
+        mBufferDispatcher = new Dispatcher<>(500, 25, 50,
+                "sdrtrunk pass-through channel " + tunerChannel.getFrequency());
         mBufferDispatcher.setListener(new BufferProcessor());
         mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
     }

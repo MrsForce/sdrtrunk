@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import io.github.dsheirer.util.Dispatcher;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
@@ -69,8 +68,8 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     private static final int PROCESSED_CHANNEL_RESULTS_THRESHOLD = 1024;
 
-    //Sized at 152 buffers a second where max = 5 seconds
-    private IFFTProcessorDispatcher mIFFTProcessorDispatcher = new IFFTProcessorDispatcher(5 * 152);
+    //Sized at 152 buffers a second where max = 5 seconds, processing 15 buffers per interval, 20 times a second = 300 buffers/second
+    private IFFTProcessorDispatcher mIFFTProcessorDispatcher = new IFFTProcessorDispatcher(5 * 152, 15, 50);
     private FloatFFT_1D mFFT;
     private float[] mInlineSamples;
     private float[] mInlineFilter;
@@ -407,9 +406,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     public class IFFTProcessorDispatcher extends Dispatcher<List<float[]>>
     {
-        public IFFTProcessorDispatcher(int maximumSize)
+        public IFFTProcessorDispatcher(int maximumSize, int batchSize, long interval)
         {
-            super(maximumSize, "sdrtrunk polyphase ifft processor", Collections.emptyList());
+            super(maximumSize, batchSize, interval, "sdrtrunk polyphase ifft processor");
 
             //We create a listener interface to receive the batched channel results arrays from the scheduled thread pool
             //dispatcher thread that is part of this continuous buffer processor.  We perform an IFFT on each

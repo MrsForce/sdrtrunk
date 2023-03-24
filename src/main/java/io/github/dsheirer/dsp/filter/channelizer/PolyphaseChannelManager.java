@@ -20,7 +20,6 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.buffer.INativeBufferProvider;
-import io.github.dsheirer.buffer.NativeBufferPoisonPill;
 import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.eventbus.MyEventBus;
@@ -110,8 +109,8 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         }
 
         mChannelCalculator = new ChannelCalculator(sampleRate, channelCount, frequency, CHANNEL_OVERSAMPLING);
-        mBufferDispatcher = new Dispatcher(500, "sdrtrunk polyphase buffer processor",
-                new NativeBufferPoisonPill());
+        mBufferDispatcher = new Dispatcher(500, 20, 50,
+                "sdrtrunk polyphase buffer processor");
         mBufferDispatcher.setListener(mNativeBufferReceiver);
     }
 

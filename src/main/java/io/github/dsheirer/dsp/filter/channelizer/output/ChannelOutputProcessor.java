@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.util.Dispatcher;
-import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +45,8 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     public ChannelOutputProcessor(int inputChannelCount, double sampleRate)
     {
         mInputChannelCount = inputChannelCount;
-        mChannelResultsDispatcher = new Dispatcher<>((int)sampleRate, "sdrtrunk polyphase channel", Collections.emptyList());
+        mChannelResultsDispatcher = new Dispatcher<>((int)sampleRate, 20, 50,
+                "sdrtrunk polyphase channel");
         mChannelResultsDispatcher.setListener(floats -> process(floats));
     }
 
