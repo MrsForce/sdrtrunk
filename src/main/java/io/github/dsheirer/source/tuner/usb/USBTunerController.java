@@ -20,7 +20,6 @@ package io.github.dsheirer.source.tuner.usb;
 
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.buffer.INativeBufferFactory;
-import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
@@ -258,6 +257,8 @@ public abstract class USBTunerController extends TunerController
             mRunning = false;
             throw se;
         }
+
+        startStreaming();
     }
 
     /**
@@ -457,57 +458,6 @@ public abstract class USBTunerController extends TunerController
     protected boolean isRunning()
     {
         return mRunning;
-    }
-
-    /**
-     * Adds the IQ buffer listener and automatically starts stream buffer transfer processing, if not already started.
-     */
-    @Override
-    public void addBufferListener(Listener<INativeBuffer> listener)
-    {
-        if(isRunning())
-        {
-            mBufferListenerLock.lock();
-
-            try
-            {
-                boolean hasExistingListeners = hasBufferListeners();
-
-                super.addBufferListener(listener);
-
-                if(!hasExistingListeners)
-                {
-                    startStreaming();
-                }
-            }
-            finally
-            {
-                mBufferListenerLock.unlock();
-            }
-        }
-    }
-
-    /**
-     * Removes the IQ buffer listener and stops stream buffer transfer processing if there are no more listeners.
-     */
-    @Override
-    public void removeBufferListener(Listener<INativeBuffer> listener)
-    {
-        mBufferListenerLock.lock();
-
-        try
-        {
-            super.removeBufferListener(listener);
-
-            if(!hasBufferListeners())
-            {
-                stopStreaming();
-            }
-        }
-        finally
-        {
-            mBufferListenerLock.unlock();
-        }
     }
 
     /**
