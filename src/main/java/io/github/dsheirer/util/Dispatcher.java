@@ -19,6 +19,8 @@
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.sample.Listener;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -108,7 +110,7 @@ public class Dispatcher<E> implements Listener<E>
         {
             mThread = new Thread(new Processor());
             mThread.setName(mThreadName);
-            mThread.setPriority(Thread.MAX_PRIORITY);
+//            mThread.setPriority(Thread.MAX_PRIORITY);
             mThread.start();
         }
     }
@@ -159,17 +161,21 @@ public class Dispatcher<E> implements Listener<E>
         @Override
         public void run()
         {
+            E element;
+            List<E> additionalElements = new ArrayList<>();
+
             try
             {
                 mQueue.clear();
-
-                E element;
 
                 while(mRunning.get())
                 {
                     try
                     {
+                        //This is a blocking call to avoid thread busy idle
                         element = mQueue.take();
+                        //Catch-up call to clear the queue faster when it backs up, for high-lock contention blocking queue.
+                        mQueue.drainTo(additionalElements, 25);
 
                         if(mPoisonPill == element)
                         {
@@ -183,6 +189,27 @@ public class Dispatcher<E> implements Listener<E>
                             }
                             mListener.receive(element);
                         }
+
+                        //Process the additional (catch-up) elements
+                        for(E additional: additionalElements)
+                        {
+                            if(mPoisonPill == additional)
+                            {
+                                mRunning.set(false);
+                                break;
+                            }
+                            else if(additional != null)
+                            {
+                                if(mListener == null)
+                                {
+                                    throw new IllegalStateException("Listener for [" + mThreadName + "] is null");
+                                }
+
+                                mListener.receive(additional);
+                            }
+                        }
+
+                        additionalElements.clear();
                     }
                     catch(InterruptedException e)
                     {
@@ -193,6 +220,9 @@ public class Dispatcher<E> implements Listener<E>
                     {
                         mLog.error("Error while processing element", e);
                     }
+
+                    //Yield current execution so that other threads have a fair chance to run.
+                    Thread.yield();
                 }
 
                 //Shutting down - clear the queue
@@ -200,7 +230,7 @@ public class Dispatcher<E> implements Listener<E>
             }
             catch(Throwable t)
             {
-                mLog.error("Unexpected error thrown from the Dispatcher thread", t);
+                mLog.error("Unexpected error thrown from the Dispatcher thread that has now died!", t);
             }
         }
     }
