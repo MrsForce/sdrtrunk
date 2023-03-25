@@ -19,13 +19,14 @@
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.sample.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Threaded processor for receiving elements from a separate producer thread and forwarding those buffers to a
@@ -174,7 +175,7 @@ public class Dispatcher<E> implements Listener<E>
                         //This is a blocking call to avoid thread busy idle
                         element = mQueue.take();
                         //Catch-up call to clear the queue faster when it backs up, for high-lock contention blocking queue.
-                        mQueue.drainTo(additionalElements, 25);
+                        mQueue.drainTo(additionalElements, 5);
 
                         if(mPoisonPill == element)
                         {

@@ -26,11 +26,6 @@ import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
@@ -41,6 +36,12 @@ import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 import org.usb4java.Transfer;
 import org.usb4java.TransferCallback;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tuner controller implementation for USB tuners.  Manages general USB operations and incorporates threaded USB
@@ -688,10 +689,13 @@ public abstract class USBTunerController extends TunerController
          */
         private void dispatchTransfer(Transfer transfer)
         {
-            //Pass the transfer's byte buffer so the native buffer factory can make a copy of the byte array contents
-            //and package it as a native buffer.
-            INativeBuffer nativeBuffer = getNativeBufferFactory().getBuffer(transfer.buffer(), System.currentTimeMillis());
-            mNativeBufferBroadcaster.broadcast(nativeBuffer);
+            if(mNativeBufferBroadcaster.hasListeners())
+            {
+                //Pass the transfer's byte buffer so the native buffer factory can make a copy of the byte array contents
+                //and package it as a native buffer.
+                INativeBuffer nativeBuffer = getNativeBufferFactory().getBuffer(transfer.buffer(), System.currentTimeMillis());
+                mNativeBufferBroadcaster.broadcast(nativeBuffer);
+            }
         }
     }
 
@@ -779,6 +783,8 @@ public abstract class USBTunerController extends TunerController
                 {
                     mLog.error("Error while processing LibUsb timeout events", throwable);
                 }
+
+                Thread.yield();
             }
         }
     }
