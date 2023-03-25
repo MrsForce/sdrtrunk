@@ -347,7 +347,7 @@ public abstract class USBTunerController extends TunerController
             //Turn off auto-resubmit of USB transfer buffers
             mTransferManager.setAutoResubmitTransfers(false);
 
-            //Stop event processing thread to put all submitted tranfers in a stable state - blocks until stopped
+            //Stop event processing thread to put all submitted transfers in a stable state - blocks until stopped
             mEventProcessor.stop();
 
             //Cancel all currently submitted transfers
@@ -752,16 +752,21 @@ public abstract class USBTunerController extends TunerController
     class UsbEventProcessor implements Runnable
     {
         private Thread mThread;
-        private boolean mProcessing = false;
+        private AtomicBoolean mProcessing = new AtomicBoolean();
 
         /**
          * Start the event processing thread
          */
         public void start()
         {
-            if(mThread == null)
+            if(mProcessing.compareAndSet(false, true))
             {
-                mProcessing = true;
+                if(mThread != null)
+                {
+                    mThread.interrupt();
+                    mThread = null;
+                }
+
                 mThread = new Thread(this);
                 mThread.setName("sdrtrunk USB tuner - bus [" + mBus + "] port [" + mPortAddress + "]");
                 mThread.start();
@@ -773,20 +778,21 @@ public abstract class USBTunerController extends TunerController
          */
         public void stop()
         {
-            mProcessing = false;
-
-            try
+            if(mProcessing.compareAndSet(true, false))
             {
-                //Give the thread a second to stop - it should happen quickly because it's only checking transfers
-                //for completed status and returning them to us to dispatch.
-                mThread.join(1000);
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error stopping LibUsb event processing thread - " + e.getLocalizedMessage());
-            }
+                try
+                {
+                    //Give the thread a second to stop - it should happen quickly because it's only checking transfers
+                    //for completed status and returning them to us to dispatch.
+                    mThread.join(1000);
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error stopping LibUsb event processing thread - " + e.getLocalizedMessage());
+                }
 
-            mThread = null;
+                mThread = null;
+            }
         }
 
         /**
@@ -813,9 +819,7 @@ public abstract class USBTunerController extends TunerController
         @Override
         public void run()
         {
-            mProcessing = true;
-
-            while(mProcessing)
+            while(mProcessing.get())
             {
                 try
                 {
