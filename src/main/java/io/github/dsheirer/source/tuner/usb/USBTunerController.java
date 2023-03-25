@@ -764,7 +764,6 @@ public abstract class USBTunerController extends TunerController
                 mProcessing = true;
                 mThread = new Thread(this);
                 mThread.setName("sdrtrunk USB tuner - bus [" + mBus + "] port [" + mPortAddress + "]");
-                mThread.setPriority(Thread.MAX_PRIORITY);
                 mThread.start();
             }
         }
