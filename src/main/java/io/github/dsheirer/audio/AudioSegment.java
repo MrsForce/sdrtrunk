@@ -313,7 +313,8 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
      */
     public boolean hasAudio()
     {
-        return !mAudioBuffers.isEmpty();
+        //Experiment to see if ensuring we have a minimum count of audio buffers will prevent the garbage audio
+        return mAudioBuffers.size() > 2;
     }
 
     /**
