@@ -110,7 +110,6 @@ public class Dispatcher<E> implements Listener<E>
         {
             mThread = new Thread(new Processor());
             mThread.setName(mThreadName);
-//            mThread.setPriority(Thread.MAX_PRIORITY);
             mThread.start();
         }
     }
