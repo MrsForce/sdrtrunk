@@ -171,7 +171,8 @@ public class TunerViewPanel extends JPanel
 
                             if(selectedTuner != null && selectedTuner.hasTuner() && tunerEvent.getTuner() == selectedTuner.getTuner())
                             {
-                                mDiscoveredTunerEditor.setTunerLockState(selectedTuner.getTuner().getTunerController().isLockedSampleRate());
+                                EventQueue.invokeLater(() -> mDiscoveredTunerEditor
+                                    .setTunerLockState(selectedTuner.getTuner().getTunerController().isLockedSampleRate()));
                             }
                         }
                     }
