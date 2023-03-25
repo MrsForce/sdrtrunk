@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
     public static final int COLUMN_FREQUENCY = 8;
     public static final int COLUMN_DETAILS = 9;
 
-    protected int mMaxMessages = 500;
+    protected int mMaxEvents = 50;
 
     protected List<IDecodeEvent> mEvents = new ArrayList<>();
     protected FilterSet<IDecodeEvent> mEventFilterSet = new DecodeEventFilterSet();
@@ -130,12 +130,12 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
 
     public int getMaxMessageCount()
     {
-        return mMaxMessages;
+        return mMaxEvents;
     }
 
     public void setMaxMessageCount(int count)
     {
-        mMaxMessages = count;
+        mMaxEvents = count;
     }
 
     /**
@@ -167,7 +167,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
 
     private void prune()
     {
-        while(mEvents.size() > mMaxMessages)
+        while(mEvents.size() > mMaxEvents)
         {
             int index = mEvents.size() - 1;
             mEvents.remove(index);
