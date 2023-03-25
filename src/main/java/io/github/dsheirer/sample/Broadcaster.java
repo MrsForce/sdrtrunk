@@ -121,12 +121,23 @@ public class Broadcaster<T> implements Listener<T>
         {
             for(Listener<T> listener: mListeners)
             {
-                listener.receive(t);
+                if(listener != null)
+                {
+                    try
+                    {
+                        listener.receive(t);
+                    }
+                    catch(Exception e)
+                    {
+                        mLog.error("Error while broadcasting [" + t.getClass() + "] to listener [" +
+                                listener.getClass() + "] - " + e.getMessage());
+                    }
+                }
             }
         }
         catch(Exception e)
         {
-            mLog.error("Error while broadcasting [" + t.getClass() + "] to listeners");
+            mLog.error("Error while broadcasting [" + t.getClass() + "] to listeners - " + e.getMessage());
         }
     }
 }
