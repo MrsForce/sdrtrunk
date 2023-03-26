@@ -25,6 +25,10 @@ import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
+import org.jtransforms.fft.FloatFFT_1D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -32,9 +36,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.jtransforms.fft.FloatFFT_1D;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Processes both complex samples or float samples and dispatches a float array of DFT results, using configurable fft
@@ -229,7 +230,7 @@ public class ComplexDftProcessor<T extends INativeBuffer> implements Listener<T>
                     mRunning.set(false);
                 }
             }
-            catch(Exception e)
+            catch(Throwable e)
             {
                 mLog.error("error during dft processor calculation task", e);
             }
