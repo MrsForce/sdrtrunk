@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import io.github.dsheirer.util.Dispatcher;
-import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +46,31 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     public ChannelOutputProcessor(int inputChannelCount, double sampleRate)
     {
         mInputChannelCount = inputChannelCount;
-        mChannelResultsDispatcher = new Dispatcher<>((int)sampleRate, "sdrtrunk polyphase channel", Collections.emptyList());
-        mChannelResultsDispatcher.setListener(floats -> process(floats));
+        //Process 1/10th of the sample rate per second at a rate of 20 times a second (200% of anticipated rate)
+        mChannelResultsDispatcher = new Dispatcher("sdrtrunk polyphase channel", (int)(sampleRate / 10), 50);
+        mChannelResultsDispatcher.setListener(floats -> {
+            try
+            {
+                process(floats);
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error processing channel results", t);
+            }
+        });
+    }
+
+    /**
+     * Sets the heartbeat manager to receive commands from the dispatcher thread on the dispatching interval.
+     * @param heartbeatManager to be commanded.
+     */
+    @Override
+    public void setHeartbeatManager(HeartbeatManager heartbeatManager)
+    {
+        if(mChannelResultsDispatcher != null)
+        {
+            mChannelResultsDispatcher.setHeartbeatManager(heartbeatManager);
+        }
     }
 
     /**
