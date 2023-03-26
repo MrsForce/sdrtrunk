@@ -179,14 +179,11 @@ public class Dispatcher<E> implements Listener<E>
                         if(mPoisonPill == element)
                         {
                             mRunning.set(false);
+                            break;
                         }
                         else if(element != null)
                         {
-                            if(mListener == null)
-                            {
-                                throw new IllegalStateException("Listener for [" + mThreadName + "] is null");
-                            }
-                            mListener.receive(element);
+                            dispatch(element);
                         }
 
                         //Process the additional (catch-up) elements
@@ -199,12 +196,7 @@ public class Dispatcher<E> implements Listener<E>
                             }
                             else if(additional != null)
                             {
-                                if(mListener == null)
-                                {
-                                    throw new IllegalStateException("Listener for [" + mThreadName + "] is null");
-                                }
-
-                                mListener.receive(additional);
+                                dispatch(additional);
                             }
                         }
 
@@ -215,9 +207,9 @@ public class Dispatcher<E> implements Listener<E>
                         //Normal shutdown is by interrupt
                         mRunning.set(false);
                     }
-                    catch(Exception e)
+                    catch(Throwable t)
                     {
-                        mLog.error("Error while processing element", e);
+                        mLog.error("Error while processing element", t);
                     }
 
                     //Yield current execution so that other threads have a fair chance to run.
@@ -231,6 +223,21 @@ public class Dispatcher<E> implements Listener<E>
             {
                 mLog.error("Unexpected error thrown from the Dispatcher thread that has now died!", t);
             }
+        }
+
+        /**
+         * Dispatches the element to the registered listener.
+         * @param element to dispatch
+         * @throws IllegalStateException if the registered listener is null.
+         */
+        private void dispatch(E element)
+        {
+            if(mListener == null)
+            {
+                throw new IllegalStateException("Listener for [" + mThreadName + "] is null");
+            }
+
+            mListener.receive(element);
         }
     }
 }

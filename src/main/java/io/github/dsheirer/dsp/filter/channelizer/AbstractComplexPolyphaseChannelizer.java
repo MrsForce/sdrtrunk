@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -139,11 +139,11 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<In
     }
 
     /**
-     * Number of polyphase channels registered to receive sample streams
+     * Indicates if this channelizer is currently providing samples to one or more channels
      */
-    public int getRegisteredChannelCount()
+    public boolean hasChannels()
     {
-        return mChannels.size();
+        return !mChannels.isEmpty();
     }
 
     @Override

@@ -237,8 +237,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             mPolyphaseChannelizer.addChannel(channelSource);
             mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
 
-            //If this is the first channel, register to start the sample buffers flowing
-            if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
+            //Register to start the sample buffers flowing.  Subsequent calls to start as more channels are added
+            //will have no (additional) effect.
+            if(mPolyphaseChannelizer.hasChannels())
             {
                 mNativeBufferProvider.addBufferListener(mBufferDispatcher);
                 mPolyphaseChannelizer.start();
@@ -262,7 +263,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
 
             //If this is the last/only channel, deregister to stop the sample buffers
-            if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
+            if(!mPolyphaseChannelizer.hasChannels())
             {
                 mNativeBufferProvider.removeBufferListener(mBufferDispatcher);
                 mBufferDispatcher.stop();
@@ -277,7 +278,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         }
         catch(SourceException se)
         {
-            //Do nothing
+            mLog.error("Source exception while notifying source listeners that the sample stream is stopping", se);
         }
     }
 
@@ -328,12 +329,11 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         //If the channelizer is not setup, or setup to the wrong sample rate, recreate it
         if(mPolyphaseChannelizer == null || FastMath.abs(mPolyphaseChannelizer.getSampleRate() - tunerSampleRate) > 0.5)
         {
-            if(mPolyphaseChannelizer != null && mPolyphaseChannelizer.getRegisteredChannelCount() > 0)
+            if(mPolyphaseChannelizer != null && mPolyphaseChannelizer.hasChannels())
             {
                 throw new IllegalStateException("Polyphase Channelizer cannot be changed to a new sample rate while " +
                     "channels are currently sourced.  Ensure you remove all tuner channels before changing tuner " +
-                    "sample rate.  Current channel count:" +
-                    (mPolyphaseChannelizer != null ? mPolyphaseChannelizer.getRegisteredChannelCount() : "0"));
+                    "sample rate.");
             }
 
             try
@@ -364,16 +364,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     {
         for(PolyphaseChannelSource channelSource: mChannelSources)
         {
-            try
-            {
-                channelSource.updateOutputProcessor(mChannelCalculator, mFilterManager);
-            }
-            catch(IllegalArgumentException iae)
-            {
-                mLog.error("Error updating polyphase channel source output processor following tuner frequency or " +
-                        "sample rate change");
-                stopChannelSource(channelSource);
-            }
+            channelSource.updateOutputProcessor(mChannelCalculator, mFilterManager);
         }
     }
 

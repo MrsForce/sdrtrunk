@@ -151,7 +151,6 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
      * @param filterManager for designing and caching synthesis filters
      */
     public void updateOutputProcessor(ChannelCalculator channelCalculator, SynthesisFilterManager filterManager)
-            throws IllegalArgumentException
     {
         mPendingOutputProcessorUpdate = new PendingOutputProcessorUpdate(channelCalculator, filterManager);
     }
@@ -195,10 +194,10 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
                 }
                 catch(FilterDesignException fde)
                 {
-                    mLog.error("Error creating an updated synthesis filter for the channel output processor");
                     errorMessage ="Cannot update output processor - unable to design synthesis filter for [" +
                         indexes.size() + "] channel indices - channel sample rate [" + channelCalculator.getChannelSampleRate() +
                         "] channel bandwidth [" + channelCalculator.getChannelBandwidth() + "]";
+                    mLog.error(errorMessage);
                 }
             }
 
@@ -271,7 +270,15 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
             ChannelCalculator channelCalculator = mPendingOutputProcessorUpdate.getChannelCalculator();
             SynthesisFilterManager filterManager = mPendingOutputProcessorUpdate.getSynthesisFilterManager();
             mPendingOutputProcessorUpdate = null;
-            doUpdateOutputProcessor(channelCalculator, filterManager);
+
+            try
+            {
+                doUpdateOutputProcessor(channelCalculator, filterManager);
+            }
+            catch(IllegalArgumentException iae)
+            {
+                mLog.info("Unable to update output processor following tuner frequency change", iae);
+            }
         }
 
         try
