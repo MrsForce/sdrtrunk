@@ -31,6 +31,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
 
     private Dispatcher<List<float[]>> mChannelResultsDispatcher;
+    private HeartbeatManager mHeartbeatManager;
     protected Listener<ComplexSamples> mComplexSamplesListener;
     private int mInputChannelCount;
     private long mCurrentSampleTimestamp = System.currentTimeMillis();
@@ -42,12 +43,15 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      * @param inputChannelCount is the number of input channels for this output processor
      * @param sampleRate of the output channel.  This is used to match the oscillator's sample rate to the output
      * channel sample rate for frequency translation/correction.
+     * @param heartbeatManager to receive pings on the dispatcher thread
      */
-    public ChannelOutputProcessor(int inputChannelCount, double sampleRate)
+    public ChannelOutputProcessor(int inputChannelCount, double sampleRate, HeartbeatManager heartbeatManager)
     {
         mInputChannelCount = inputChannelCount;
         //Process 1/10th of the sample rate per second at a rate of 20 times a second (200% of anticipated rate)
-        mChannelResultsDispatcher = new Dispatcher("sdrtrunk polyphase channel", (int)(sampleRate / 10), 50);
+        mHeartbeatManager = heartbeatManager;
+        mChannelResultsDispatcher = new Dispatcher("sdrtrunk polyphase channel", (int)(sampleRate / 10),
+                50, mHeartbeatManager);
         mChannelResultsDispatcher.setListener(floats -> {
             try
             {
@@ -58,19 +62,6 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
                 mLog.error("Error processing channel results", t);
             }
         });
-    }
-
-    /**
-     * Sets the heartbeat manager to receive commands from the dispatcher thread on the dispatching interval.
-     * @param heartbeatManager to be commanded.
-     */
-    @Override
-    public void setHeartbeatManager(HeartbeatManager heartbeatManager)
-    {
-        if(mChannelResultsDispatcher != null)
-        {
-            mChannelResultsDispatcher.setHeartbeatManager(heartbeatManager);
-        }
     }
 
     /**

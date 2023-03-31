@@ -213,7 +213,6 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
             if(mPolyphaseChannelOutputProcessor != null)
             {
                 mPolyphaseChannelOutputProcessor.setListener(null);
-                mPolyphaseChannelOutputProcessor.setHeartbeatManager(null);
                 mPolyphaseChannelOutputProcessor.stop();
             }
 
@@ -223,7 +222,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
             {
                 case 1:
                     mPolyphaseChannelOutputProcessor = new OneChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
-                            indexes, channelCalculator.getChannelCount());
+                            indexes, channelCalculator.getChannelCount(), getHeartbeatManager());
                     mPolyphaseChannelOutputProcessor.setListener(this);
                     mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
                     mPolyphaseChannelOutputProcessor.start();
@@ -234,7 +233,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
                         float[] filter = filterManager.getFilter(channelCalculator.getChannelSampleRate(),
                                 channelCalculator.getChannelBandwidth(), 2);
                         mPolyphaseChannelOutputProcessor = new TwoChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
-                                indexes, filter, channelCalculator.getChannelCount());
+                                indexes, filter, channelCalculator.getChannelCount(), getHeartbeatManager());
                         mPolyphaseChannelOutputProcessor.setListener(this);
                         mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
                         mPolyphaseChannelOutputProcessor.start();
@@ -252,14 +251,6 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
                     errorMessage = "Unable to create new channel output processor - unexpected channel index size: " +
                             indexes.size();
             }
-        }
-
-        /**
-         * Register this channel's heartbeat manager to receive heartbeat commands on the output processor's dispatch interval
-         */
-        if(mPolyphaseChannelOutputProcessor != null)
-        {
-            mPolyphaseChannelOutputProcessor.setHeartbeatManager(getHeartbeatManager());
         }
 
         //Unlikely, but if we had an error designing a synthesis filter, throw an exception

@@ -85,15 +85,6 @@ public class Dispatcher<E> implements Listener<E>
     }
 
     /**
-     * Sets the heartbeat manager to receive heartbeat commands to distribute
-     * @param heartbeatManager to be commanded on the dispatch interval.
-     */
-    public void setHeartbeatManager(HeartbeatManager heartbeatManager)
-    {
-        mHeartbeatManager = heartbeatManager;
-    }
-
-    /**
      * Sets or changes the listener to receive buffers from this processor.
      * @param listener to receive buffers
      */
